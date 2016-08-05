@@ -1,39 +1,146 @@
 <?php 
 
-require_once(__DIR__.'/admin.php');
+/*
+    Plugin Name: TNS for WordPress
+    Description: Norway TNS tracking script for WordPress
+    Author: Frederik Rabøl of Bonnier Interactive
+    Version: 0.1
+    Author URI: http://bonnierpublications.com
+*/
 
-class Tns {
-	config = array(
-			's' => TnsAdmin::getTnsOption('s', false),
-			'cp' => TnsAdmin::getTnsOption('cp', false),
-			'url' => home_url()
-		);
-	unispringJsFile = __DIR__.'/js/unispring.js';
+//require __DIR__.'/vendor/autoload.php';
 
-	function implementTns(){
+class TnsTracking {
+	var $config;
+
+	var $jsFolder = '';
+
+	const PLUGIN_OPTION_NAMESPACE = 'tracking';
+	const PLUGIN_OPTION_DIVIDER = '-';
+	const PLUGIN_OPTION_ACTIVE_STRING = 'active';
+	var $activeTracking;
+
+	var $trackingOptions = [
+			'tns-dk' => [
+					'name' => 'TNS Denmark',
+					'fields' => [
+						's' 	=> '',
+						'cp' => '',
+						'url' => ''
+					],
+					'scriptName' => 'spring',
+					TnsTracking::PLUGIN_OPTION_ACTIVE_STRING => '',
+					'trackingUrl' => 'site.tns-gallup.dk'
+			],
+			'tns-no' => [
+					'name' => 'TNS Norway',
+					'fields' => [
+						's' => '',
+						'cp' => '',
+						'url' => ''
+					],
+					'scriptName' => 'unispring',
+					TnsTracking::PLUGIN_OPTION_ACTIVE_STRING => '',
+					'trackingUrl' => 'mmk.tns-cs.net'
+			]
+	];
+
+	public function __construct(){
+		$this->jsFolder = plugin_dir_url(__FILE__).'js/';
+	}
+
+	public function initHooks(){
+		add_action('admin_menu', function() {
+			// Add a new submenu item under Settings:
+			add_options_page('TNS settings', 'TNS settings', 'manage_options', 'tns_settings', array($this, 'loadAdminPage'));
+		});
 		// load the unispring script first
-		wp_enqueue_script( 'tns-norway' , $this->unispringJsFile, array(), '', 'all', true);
+		$this->addScriptsToPage();
+	}
 
-		if($this->config['cp'],false)){
+	public function fetchTrackingOptions(){
+		foreach ($this->trackingOptions as $trackingOption => $trackingOptionValue){
+			$this->activeTracking = $this->getTnsOption(TnsTracking::PLUGIN_OPTION_ACTIVE_STRING);
+			foreach($trackingOptionValue['fields'] as $field => $fieldValue){
+				$trackingOptionValue['fields'][$field] = $this->getTnsOption($trackingOption . TnsTracking::PLUGIN_OPTION_DIVIDER .$field);
+			}
+			$this->trackingOptions[$trackingOption]['fields'] = $trackingOptionValue['fields'];
+		
+			$this->trackingOptions[$trackingOption][TnsTracking::PLUGIN_OPTION_ACTIVE_STRING] = ($this->activeTracking === $trackingOption)? true : false;
 
-			echo <<<HTML
-				<script src="http://www.cathinthecity.com/wp-content/themes/stylista/js/unispring.js"></script>
-				<script type="text/javascript">
-				var sp_e0 = {
-				 "s":$this->config['s'],
-				 "cp":$this->config['cp'],
-				 "url": window.location.toString()
-				}
-				unispring.c(sp_e0);
-				</script><noscript> <img
-				src="http://mmk.tns-cs.net/j0=,,,;+,cp=$this->config['cp']+url=$this->config['url'];;;" alt="tns-tracking"> </noscript>
-HTML
 		}
 	}
 
-	function __construct(){
-		add_action('wp_footer',array($this, 'implementTns'));
+	public static function getTnsOption($option, $defaultValue = NULL) {
+		$configValue = get_option(TnsTracking::PLUGIN_OPTION_NAMESPACE . TnsTracking::PLUGIN_OPTION_DIVIDER . $option, NULL );
+		return (empty($configValue)) ? $defaultValue : $configValue;
+	}
+
+	public static function setTnsOption($option, $value) {
+		return update_option($option, $value);
+	}
+
+	public function updateOptionsIfChanged(){
+		foreach ($_POST as $key => $value) {
+			if($key != 'submit'){
+				TnsTracking::setTnsOption($key,$value);
+			}
+		}
+	}
+
+	public function loadAdminPage(){
+		$this->updateOptionsIfChanged();
+		$optionFields = '';
+		$this->fetchTrackingOptions();
+
+		foreach ($this->trackingOptions as $trackingOption => $trackingOptionValue) {
+			$isChecked = ($this->activeTracking == $trackingOption)?'checked':'';
+			$optionFields .= '<tr><th colspan="2">'.$trackingOptionValue['name'].'<input type="radio" name="'.TnsTracking::PLUGIN_OPTION_NAMESPACE . TnsTracking::PLUGIN_OPTION_DIVIDER . TnsTracking::PLUGIN_OPTION_ACTIVE_STRING .'" value="' . $trackingOption . '" '.$isChecked.'/></th></tr>';
+			foreach($trackingOptionValue['fields'] as $field => $fieldValue){
+				$fieldKey = TnsTracking::PLUGIN_OPTION_NAMESPACE . TnsTracking::PLUGIN_OPTION_DIVIDER . $trackingOption . TnsTracking::PLUGIN_OPTION_DIVIDER . $field;
+				$optionFields .= '
+				<tr>
+					<th scope="row"><label for="'. $fieldKey .'">'.$field.'</label></th>
+					<td><input name="'.$fieldKey.'" type="text" id="'.$fieldKey.'" value="'.$fieldValue.'" class="regular-text"></td>
+				</tr>';
+			}
+		}
+
+		echo '
+		<div class="wrap">
+			<form method="POST">
+				<table class="form-table">
+					<tbody>'. $optionFields .'</tbody>
+				</table>
+				<input type="submit" name="submit" id="submit" class="button button-primary" value="'.__('Gem ændringer').'">
+			</form>
+		</div>';
+
+	}
+
+	public function implementTrackingScript(){
+		$this->fetchTrackingOptions();
+
+		if($this->activeTracking){
+
+			echo '
+				<script type="text/javascript">
+				var sp_e0 = {
+				 "s":'.$this->trackingOptions[$this->activeTracking]['fields']['s'].',
+				 "cp":'.$this->trackingOptions[$this->activeTracking]['fields']['cp'].',
+				 "url": window.location.toString()
+				}
+				'.$this->trackingOptions[$this->activeTracking]['scriptName'].'.c(sp_e0);
+				</script><noscript><img src="http://'.$this->trackingOptions[$this->activeTracking]['trackingUrl'].'/j0=,,,;+,cp='.$this->trackingOptions[$this->activeTracking]['fields']['cp'].'+url='.$this->trackingOptions[$this->activeTracking]['fields']['url'].';;;" alt="tns-tracking"></noscript>';
+		}
+	}
+
+	public function addScriptsToPage(){
+		wp_enqueue_script( $this->trackingOptions[TnsTracking::PLUGIN_OPTION_ACTIVE_STRING] , $this->jsFolder.$this->trackingOptions[$this->activeTracking]['scriptName'].'.js', array(), '', 'all', true);
+		add_action('wp_footer', array($this, 'implementTrackingScript'),1200);
 	}
 }
 
-new Tns();
+$tns = new TnsTracking();
+$tns->initHooks();
+?>
