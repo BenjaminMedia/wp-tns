@@ -62,8 +62,22 @@ class TnsTracking {
 			add_action('wp_enqueue_scripts', function(){
 				wp_enqueue_script( $this->activeTracking.TnsTracking::PLUGIN_OPTION_DIVIDER.'js' , $this->jsFolder.$this->trackingOptions[$this->activeTracking]['scriptName'].'.js', array(), '', 'all', true);
 			});
+			add_action('wp_footer', array($this, 'implementTrackingScript'),1200);
 		}
-		add_action('wp_footer', array($this, 'implementTrackingScript'),1200);
+		if($this->activeTracking == 'tns-dk'){
+
+			add_action('wp_head', function(){
+				echo '<script type="text/javascript"> (function() {
+				var scr = document.createElement(\'script\');
+				scr.type = \'text/javascript\'; scr.async = true;
+				scr.src = \''.$this->jsFolder.$this->trackingOptions[$this->activeTracking]['scriptName'].'.js\';
+				var s = document.getElementsByTagName(\'script\')[0];
+				s.parentNode.insertBefore(scr, s);
+				})();
+			</script>';
+			});
+			add_action('wp_footer', array($this, 'implementTrackingScript'),1200);
+		}
 		
 		$this->addScriptsToPage();
 	}
@@ -144,15 +158,6 @@ class TnsTracking {
 						"cp":\''.$this->trackingOptions[$this->activeTracking]['fields']['cp'].'\',
 						"url": window.location.toString()
 					});
-				</script>
-				<script type="text/javascript"> (function() {
-				var scr = document.createElement(\'script\');
-				scr.type = \'text/javascript\'; scr.async = true;
-				scr.src = \''.$this->jsFolder.$this->trackingOptions[$this->activeTracking]['scriptName'].'.js.'\'; //here goes the path to where you have saved the
-				included spring.js file
-				var s = document.getElementsByTagName(\'script\')[0];
-				s.parentNode.insertBefore(scr, s);
-				})();
 				</script>';
 			}
 
