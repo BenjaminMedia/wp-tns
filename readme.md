@@ -1,1 +1,1 @@
-# Norway TNS tracking script for WordPress
+# Norway & Denmark TNS tracking script for WordPress

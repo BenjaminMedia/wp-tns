@@ -6,6 +6,7 @@
   "description": "Norway TNS tracking script & settings for WordPress",
   "keywords": ["plugin","cxense"],
   "require": {
-    "composer/installers": "~1.0.6"
+    "composer/installers": "~1.0.6",
+    "symfony/var-dumper": "^3.1"
   }
 }
