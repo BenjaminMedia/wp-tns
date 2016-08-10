@@ -8,7 +8,7 @@
     Author URI: http://bonnierpublications.com
 */
 
-//require __DIR__.'/vendor/autoload.php';
+require __DIR__.'/vendor/autoload.php';
 
 class TnsTracking {
 	var $config;
@@ -30,7 +30,8 @@ class TnsTracking {
 					],
 					'scriptName' => 'spring',
 					TnsTracking::PLUGIN_OPTION_ACTIVE_STRING => '',
-					'trackingUrl' => 'site.tns-gallup.dk'
+					'trackingUrl' => 'tns-gallup.dk',
+					'trackingFunction' => 'push'
 			],
 			'tns-no' => [
 					'name' => 'TNS Norway',
@@ -41,12 +42,14 @@ class TnsTracking {
 					],
 					'scriptName' => 'unispring',
 					TnsTracking::PLUGIN_OPTION_ACTIVE_STRING => '',
-					'trackingUrl' => 'mmk.tns-cs.net'
+					'trackingUrl' => 'mmk.tns-cs.net',
+					'trackingFunction' => 'c'
 			]
 	];
 
 	public function __construct(){
 		$this->jsFolder = plugin_dir_url(__FILE__).'js/';
+		$this->activeTracking = $this->getTnsOption(TnsTracking::PLUGIN_OPTION_ACTIVE_STRING);
 	}
 
 	public function initHooks(){
@@ -54,7 +57,14 @@ class TnsTracking {
 			// Add a new submenu item under Settings:
 			add_options_page('TNS settings', 'TNS settings', 'manage_options', 'tns_settings', array($this, 'loadAdminPage'));
 		});
-		// load the unispring script first
+		if($this->activeTracking == 'tns-no'){
+			// load the unispring script first
+			add_action('wp_enqueue_scripts', function(){
+				wp_enqueue_script( $this->activeTracking.TnsTracking::PLUGIN_OPTION_DIVIDER.'js' , $this->jsFolder.$this->trackingOptions[$this->activeTracking]['scriptName'].'.js', array(), '', 'all', true);
+			});
+		}
+		add_action('wp_footer', array($this, 'implementTrackingScript'),1200);
+		
 		$this->addScriptsToPage();
 	}
 
@@ -115,29 +125,57 @@ class TnsTracking {
 				<input type="submit" name="submit" id="submit" class="button button-primary" value="'.__('Gem ændringer').'">
 			</form>
 		</div>';
+		dump($this->trackingOptions);
 
 	}
 
 	public function implementTrackingScript(){
 		$this->fetchTrackingOptions();
+		if($this->activeTracking && !is_admin()){
 
-		if($this->activeTracking){
+			$javascriptOutput = '<script type="text/javascript">';
 
-			echo '
-				<script type="text/javascript">
-				var sp_e0 = {
-				 "s":'.$this->trackingOptions[$this->activeTracking]['fields']['s'].',
-				 "cp":'.$this->trackingOptions[$this->activeTracking]['fields']['cp'].',
+			if($this->activeTracking == 'tns-dk'){
+				$javascriptOutput .=
+				'var '.$this->trackingOptions[$this->activeTracking]['scriptName'].'q = 
+					'.$this->trackingOptions[$this->activeTracking]['scriptName'].'q || [];
+					'.$this->trackingOptions[$this->activeTracking]['scriptName'].'q.'.$this->trackingOptions[$this->activeTracking]['trackingFunction'].'({
+						"s":\''.$this->trackingOptions[$this->activeTracking]['fields']['s'].'\',
+						"cp":\''.$this->trackingOptions[$this->activeTracking]['fields']['cp'].'\',
+						"url": window.location.toString()
+					});
+				</script>
+				<script type="text/javascript"> (function() {
+				var scr = document.createElement(\'script\');
+				scr.type = \'text/javascript\'; scr.async = true;
+				scr.src = \''.$this->jsFolder.$this->trackingOptions[$this->activeTracking]['scriptName'].'.js.'\'; //here goes the path to where you have saved the
+				included spring.js file
+				var s = document.getElementsByTagName(\'script\')[0];
+				s.parentNode.insertBefore(scr, s);
+				})();
+				</script>';
+			}
+
+			if ($this->activeTracking == 'tns-no'){
+				$javascriptOutput .=
+				'var sp_e0 = {
+				 "s":\''.$this->trackingOptions[$this->activeTracking]['fields']['s'].'\',
+				 "cp":\''.$this->trackingOptions[$this->activeTracking]['fields']['cp'].'\',
 				 "url": window.location.toString()
 				}
-				'.$this->trackingOptions[$this->activeTracking]['scriptName'].'.c(sp_e0);
-				</script><noscript><img src="http://'.$this->trackingOptions[$this->activeTracking]['trackingUrl'].'/j0=,,,;+,cp='.$this->trackingOptions[$this->activeTracking]['fields']['cp'].'+url='.$this->trackingOptions[$this->activeTracking]['fields']['url'].';;;" alt="tns-tracking"></noscript>';
+				'.$this->trackingOptions[$this->activeTracking]['scriptName'].'.'.$this->trackingOptions[$this->activeTracking]['trackingFunction'].'(sp_e0);
+				</script>';
+			}
+
+
+			$javascriptOutput .= '<noscript><img src="http://'.$this->trackingOptions[$this->activeTracking]['fields']['s'].'.'.$this->trackingOptions[$this->activeTracking]['trackingUrl'].'/j0=,,,;+,cp='.$this->trackingOptions[$this->activeTracking]['fields']['cp'].'+url='.$this->trackingOptions[$this->activeTracking]['fields']['url'].';;;" alt="tns-tracking"></noscript>';
+
+			echo $javascriptOutput;
 		}
 	}
 
 	public function addScriptsToPage(){
-		wp_enqueue_script( $this->trackingOptions[TnsTracking::PLUGIN_OPTION_ACTIVE_STRING] , $this->jsFolder.$this->trackingOptions[$this->activeTracking]['scriptName'].'.js', array(), '', 'all', true);
-		add_action('wp_footer', array($this, 'implementTrackingScript'),1200);
+
 	}
 }
 
