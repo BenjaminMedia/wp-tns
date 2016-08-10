@@ -139,7 +139,6 @@ class TnsTracking {
 				<input type="submit" name="submit" id="submit" class="button button-primary" value="'.__('Gem ændringer').'">
 			</form>
 		</div>';
-		dump($this->trackingOptions);
 
 	}
 
