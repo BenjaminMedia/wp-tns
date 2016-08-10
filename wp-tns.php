@@ -154,8 +154,7 @@ class TnsTracking {
 						"s":\''.$this->trackingOptions[$this->activeTracking]['fields']['s'].'\',
 						"cp":\''.$this->trackingOptions[$this->activeTracking]['fields']['cp'].'\',
 						"url": window.location.toString()
-					});
-				</script>';
+					});';
 			}
 
 			if ($this->activeTracking == 'tns-no'){
@@ -165,12 +164,11 @@ class TnsTracking {
 				 "cp":\''.$this->trackingOptions[$this->activeTracking]['fields']['cp'].'\',
 				 "url": window.location.toString()
 				}
-				'.$this->trackingOptions[$this->activeTracking]['scriptName'].'.'.$this->trackingOptions[$this->activeTracking]['trackingFunction'].'(sp_e0);
-				</script>';
+				'.$this->trackingOptions[$this->activeTracking]['scriptName'].'.'.$this->trackingOptions[$this->activeTracking]['trackingFunction'].'(sp_e0);';
 			}
 
 
-			$javascriptOutput .= '<noscript><img src="http://'.$this->trackingOptions[$this->activeTracking]['fields']['s'].'.'.$this->trackingOptions[$this->activeTracking]['trackingUrl'].'/j0=,,,;+,cp='.$this->trackingOptions[$this->activeTracking]['fields']['cp'].'+url='.$this->trackingOptions[$this->activeTracking]['fields']['url'].';;;" alt="tns-tracking"></noscript>';
+			$javascriptOutput .= '</script><noscript><img src="http://'.$this->trackingOptions[$this->activeTracking]['fields']['s'].'.'.$this->trackingOptions[$this->activeTracking]['trackingUrl'].'/j0=,,,;+,cp='.$this->trackingOptions[$this->activeTracking]['fields']['cp'].'+url='.$this->trackingOptions[$this->activeTracking]['fields']['url'].';;;" alt="tns-tracking"></noscript>';
 
 			echo $javascriptOutput;
 		}
