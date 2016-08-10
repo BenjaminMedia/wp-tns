@@ -78,8 +78,6 @@ class TnsTracking {
 			});
 			add_action('wp_footer', array($this, 'implementTrackingScript'),1200);
 		}
-		
-		$this->addScriptsToPage();
 	}
 
 	public function fetchTrackingOptions(){
@@ -176,10 +174,6 @@ class TnsTracking {
 
 			echo $javascriptOutput;
 		}
-	}
-
-	public function addScriptsToPage(){
-
 	}
 }
 
