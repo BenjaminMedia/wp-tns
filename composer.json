@@ -1,0 +1,12 @@
+{
+  "name": "benjaminmedia/wp-tns",
+  "type": "wordpress-plugin",
+  "homepage": "https://github.com/BenjaminMedia/wp-tns",
+  "license": "GPLv3",
+  "description": "Norway TNS tracking script & settings for WordPress",
+  "keywords": ["plugin","cxense"],
+  "require": {
+    "composer/installers": "~1.0.6",
+    "symfony/var-dumper": "^3.1"
+  }
+}
