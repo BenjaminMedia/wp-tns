@@ -8,8 +8,6 @@
     Author URI: http://bonnierpublications.com
 */
 
-require __DIR__.'/vendor/autoload.php';
-
 class TnsTracking {
 	var $config;
 
