@@ -4,7 +4,7 @@
     Plugin Name: TNS for WordPress
     Description: Norway TNS tracking script for WordPress
     Author: Frederik Rabøl of Bonnier Interactive
-    Version: 0.1
+    Version: 0.2
     Author URI: http://bonnierpublications.com
 */
 
